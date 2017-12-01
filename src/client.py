@@ -5,15 +5,19 @@
 # python 3
 
 import socket
+import os
 from parser import Parser
 from parser import MessageTypeError
 from parser import ChannelError
+from parser import MessageType
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server = "epsilon.systems"
 channel = "#radio"
 port = 6667
 nick = "listener"
+
+uri = 'dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.OpenUri string:'
 
 p = Parser(channel)
 
@@ -31,20 +35,16 @@ def sendmsg(msg, target):
 def ircquit(msg):
     sock.send(bytes("QUIT " + msg + "\n", "UTF-8"))
 
-def playsong(song):
-    pass
 
 def connect(server, port):
     sock.connect((server, port))
     sock.send(bytes("USER " + nick + " " + nick + " " + nick + " " + nick + "\n", "UTF-8"))
     sock.send(bytes("NICK " + nick + "\n", "UTF-8"))
 
-def parseuri(msg):
-    index = msg.rfind("SONG:")
-    if (index == -1):
-        return ""
-    else:
-        return msg.sub(index)
+# no error checking atm to ensure it's a real spotify uri but whatevva
+def play_song(song):
+    cmd = uri + song
+    os.system(cmd)
 
 def exit():
     sock.close()
@@ -76,7 +76,9 @@ while True:
 
         try:
             parsed_msg = p.parse_msg(msg)
-            print('PARSED_MSG: ' + parsed_msg.sender + ':' + parsed_msg.msg_type + ':' + parsed_msg.data)
+            #print('PARSED_MSG: ' + parsed_msg.sender + ':' + parsed_msg.msg_type + ':' + parsed_msg.data)
+            if parsed_msg.msg_type == MessageType.SONG_PLAY:
+                play_song(parsed_msg.data)
         except MessageTypeError:
             print('Unknown message type')
         except ChannelError:

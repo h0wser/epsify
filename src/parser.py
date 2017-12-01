@@ -58,4 +58,4 @@ class Parser:
         if not m == None:
             data = m.group(0)[2:]
 
-        return Message(msg_type, data, sender)
+        return Message(mt, data, sender)
