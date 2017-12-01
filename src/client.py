@@ -5,12 +5,17 @@
 # python 3
 
 import socket
+from parser import Parser
+from parser import MessageTypeError
+from parser import ChannelError
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server = "epsilon.systems"
 channel = "#radio"
 port = 6667
 nick = "listener"
+
+p = Parser(channel)
 
 def joinchan(chan):
     sock.send(bytes("JOIN " + chan + "\n", "UTF-8"))
@@ -44,8 +49,12 @@ def parseuri(msg):
 def exit():
     sock.close()
 
-def pingpong(server):
-    None
+#lol
+def pingpong(data):
+    print('Replying to ' + data)
+    newdata = list(data)
+    newdata[1] = 'O'
+    sock.send(bytes("".join(newdata) + '\n', "UTF-8"))
 
 
 connect(server, port)
@@ -61,6 +70,16 @@ while True:
         break
 
     print(msg)
+    if (msg.find("PING") > -1):
+        pingpong(msg)
+    else:
 
-    if (msg.find("PRIVMSG ") > -1):
-        print("found msg")
+        try:
+            parsed_msg = p.parse_msg(msg)
+            print('PARSED_MSG: ' + parsed_msg.sender + ':' + parsed_msg.msg_type + ':' + parsed_msg.data)
+        except MessageTypeError:
+            print('Unknown message type')
+        except ChannelError:
+            print('Not listening on channel')
+        except Exception:
+            print('Something else broke')
